@@ -14,7 +14,7 @@ func NewPylint() Step {
 
 func (s *Pylint) Execute(filepath string) error {
 	mainFile := fmt.Sprintf("%s.py", filepath)
-	res, err := exec.Command("pylint", mainFile).CombinedOutput()
+	res, err := exec.Command("pylint", "--fail-under=6", mainFile).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("lint output: %s \n %s", err, res)
 	}

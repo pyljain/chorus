@@ -1,25 +1,26 @@
 import unittest
-import sys
 from io import StringIO
-import first
+import sys
+from first import add_numbers
 
-class TestAddNumbers(unittest.TestCase):
 
+class Testing(unittest.TestCase):
     def test_add_numbers(self):
-        """Test the function add_numbers."""
-        # Save the current value of sys.stdout
-        old_stdout = sys.stdout
-        # Temporarily redirect sys.stdout to a StringIO object
-        sys.stdout = StringIO()
-        first.add_numbers(3, 5)
-        # Get the printed output
-        output = sys.stdout.getvalue().strip()
-        # Put back sys.stdout to its original setting
-        sys.stdout = old_stdout
-        # Define the expected output
-        expected_output = 'The sum of 3 and 5 is 8.'
-        # Check if the produced output matches the expected one
-        self.assertEqual(output, expected_output)
+        expected_output = 'The sum of 10 and 20 is 30.'
+
+        # Redirect standard output to StringIO
+        output = StringIO()
+        sys.stdout = output
+
+        # Call the function
+        add_numbers(10, 20)
+
+        # Get the output
+        outputStr = output.getvalue().strip()
+
+        # Check the output
+        self.assertEqual(outputStr, expected_output)
+
 
 if __name__ == '__main__':
     unittest.main()

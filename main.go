@@ -2,8 +2,9 @@ package main
 
 import (
 	"codeagent/pkg/agents"
+	"codeagent/pkg/config"
+	"codeagent/pkg/formatters"
 	"codeagent/pkg/prompts"
-	"codeagent/pkg/steps"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -15,42 +16,49 @@ import (
 
 func main() {
 
-	baseprompt := flag.String("baseprompt", "", "Provide the file location for the base prompt YAML")
+	configLoc := flag.String("config", "./chorus.yaml", "Location of the config file\n")
 	flag.Parse()
 
 	// Get directory with incoming files to convert
 	dir := flag.Arg(0)
 	if dir == "" {
-		fmt.Printf("Make sure to provide the root directory for incoming code files to process")
+		fmt.Printf("Make sure to provide the root directory for incoming code files to process\n")
 		os.Exit(-1)
 	}
 
-	// Get the prompt template from a file location
-
-	if *baseprompt == "" {
-		fmt.Printf("Make sure to provide the base prompt YAML location")
+	if *configLoc == "" {
+		fmt.Printf("Make sure to provide the config file location\n")
 		os.Exit(-1)
 	}
 
-	templateManager, err := prompts.NewPromptTemplate(*baseprompt)
+	cfg, err := config.New(*configLoc)
+	if err != nil {
+		fmt.Printf("Could not read the provided config file %s\n", err)
+		os.Exit(-1)
+	}
+
+	templateManager, err := prompts.NewPromptTemplate(cfg.Prompt)
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(-1)
 	}
 
 	outputDirectory := path.Join(dir, "output")
 
 	openAIAPIKey := os.Getenv("OPENAI_API_KEY")
-	agent := agents.NewOpenAICodeAgent(openAIAPIKey, outputDirectory)
-	agent.ConfigurePipeline([]steps.Step{
-		steps.NewPyUnitTest(),
-		steps.NewPylint(),
-	})
+	agent := agents.NewOpenAICodeAgent(openAIAPIKey, outputDirectory, cfg.Model)
+	steps, err := cfg.GetPipelineSteps()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+	agent.ConfigurePipeline(steps)
 
 	// Read files
 	inputDirectory := path.Join(dir, "input")
+	result := []*agents.PipelineRunResult{}
 
-	err = filepath.WalkDir(inputDirectory, func(filepath string, d fs.DirEntry, err error) error {
-
+	filepath.WalkDir(inputDirectory, func(filepath string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
 			codeBytes, err := os.ReadFile(filepath)
 			if err != nil {
@@ -64,20 +72,16 @@ func main() {
 				return err
 			}
 
-			err = agent.RunPipeline(prompt, filenameWithoutExtension)
+			pipelineResult, err := agent.RunPipeline(prompt, filenameWithoutExtension)
 			if err != nil {
 				return err
 			}
-		}
 
+			result = append(result, pipelineResult)
+		}
 		return nil
 	})
 
-	if err != nil {
-		fmt.Printf("Unable to parse input directory %s", err)
-		os.Exit(-1)
-	}
-
-	// Generate hydrated prompt
-	// Populate the output directory
+	// Print output
+	formatters.PrintTable(result)
 }

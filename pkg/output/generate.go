@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
+	"strings"
 )
 
 func Generate(basePath string, filename string, openAIResponse string) error {
+
+	resp := parseResponse(openAIResponse)
+
 	lr := llmResponse{}
-	err := json.Unmarshal([]byte(openAIResponse), &lr)
+	err := json.Unmarshal([]byte(resp), &lr)
 	if err != nil {
 		return err
 	}
@@ -25,6 +30,17 @@ func Generate(basePath string, filename string, openAIResponse string) error {
 	}
 
 	return nil
+}
+
+func parseResponse(llmResponse string) string {
+	if !strings.Contains(llmResponse, "```json") {
+		return llmResponse
+	}
+
+	r := regexp.MustCompile("(?s)```json(.+)```")
+	matches := r.FindStringSubmatch(llmResponse)
+
+	return matches[1]
 }
 
 type llmResponse struct {

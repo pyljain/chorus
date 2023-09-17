@@ -3,25 +3,11 @@ package prompts
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"text/template"
-
-	"gopkg.in/yaml.v3"
 )
 
-func NewPromptTemplate(basePromptFileName string) (*Template, error) {
-	basePromptBytes, err := os.ReadFile(basePromptFileName)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read the base prompt provided %s", err)
-	}
-
-	pt := promptTemplate{}
-	err = yaml.Unmarshal(basePromptBytes, &pt)
-	if err != nil {
-		return nil, fmt.Errorf("unable to parse prompt provided %s", err)
-	}
-
-	tmpl, err := template.New("prompt").Parse(string(pt.Prompt))
+func NewPromptTemplate(basePrompt string) (*Template, error) {
+	tmpl, err := template.New("prompt").Parse(basePrompt)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse prompt template %s", err)
 	}
@@ -49,8 +35,4 @@ func (t *Template) HydrateTemplate(packageName, code string) (string, error) {
 
 type Template struct {
 	template *template.Template
-}
-
-type promptTemplate struct {
-	Prompt string `yaml:"prompt"`
 }

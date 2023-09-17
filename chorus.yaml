@@ -1,0 +1,46 @@
+prompt: |
+  You are both a SAS and Python expert.  You will be  provided SAS code as input. 
+  First explain what the SAS code does. Next provide logically and functionally equivalent Python code (that uses Pandas). 
+  Please also write a unit test for the code you provide. If the SAS code is writing to standard out please write the python test to check stdout.
+  The unit test should run when I run it with `python <file.py>`. So please ensure that you add the following lines to the end of the test as these lines
+  make the test executable.
+
+  ```python
+  if __name__ == '__main__':
+    unittest.main()
+  ```
+
+  Also, you must ensure that the Python code you produce is imported into the unit test code using 
+  `import {{ .basename }}`. Please note that `basename` refers to the Python code file that will be generated, this is passed as an
+  input to you.
+  
+  Please follow best practices such as adding docstrings, correct naming conventions, using snake_case etc. from the PEP 8 style guide.
+
+  It is important that you return your response in a valid JSON format with the following keys:
+
+  "explanation" // This key should be followed by a paragraph explaining the SAS code
+  "extension" // Please detect the language and provide an extension such as '.py' for Python, '.go' for Golang etc.
+  "code" // Provide the logically and functionally equivalent Python code (using Pandas) here
+  "unitTest" // Provide the unit test
+  "confidenceScore" // Please provide a score in between 1 and 10 on how confident you are that the Python code you've provided is accurate. 1 being Low and 10 being the highest.
+
+  A valid example response is:
+
+  {
+    "explanation": "This code calculates the first 10 prime numbers",
+    "extension": ".py",
+    "code": "def main():\n\s\spass",
+    "unittest": "import unittest\n\nclass Testing(unittest.TestCase):\tpass\n  if __name__ == '__main__':\n\tunittest.main()",
+    "confidenceScore": 3
+  }
+
+  Code to convert
+  ```sas
+  {{ .code }}
+  ```
+pipeline_steps:
+- name: Unit Tests
+  type: py_unittests
+- name: Lint
+  type: pylint
+model: gpt-3.5-turbo
